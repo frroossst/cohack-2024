@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Team Tau</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -25,12 +27,12 @@
             display: flex; /* Enable flexbox for layout */
             flex-direction: column; /* Arrange children in a column */
         }
-        .side-by-side {
-            display: flex;
-            justify-content: space-between;
-            flex-direction: column;
+        .content-container {
+            display: flex; /* Use flexbox for side-by-side layout */
+            margin-top: 20px; /* Space between title and content */
         }
         .right-align-text {
+            justify-self: right;
             text-align: right;
             margin-bottom: 0px;
         }
@@ -64,8 +66,14 @@
             font-weight: bold;
         }
         .dog-profile {
+            flex: 1; 
+            margin-right: 20px;
+            text-align: left;
+        }
+        .pet-pals {
+            flex: 1;
             text-align: center;
-            margin-bottom: 20px;
+            padding: 20px;
         }
         .dog-image {
             width: 150px;
@@ -80,27 +88,23 @@
             border: 5px solid #ffb6c1;
             border-radius: 15px;
             padding: 10px;
-            height: 300px; /* Set height for the map */
+            height: 500px; /* Set height for the map */
             position: relative; /* Added for proper map placement */
         }
         .activity-breakdown {
             margin: 20px 0;
         }
         .encountered-dogs {
-            margin: 20px 0;
-            display: flex; /* Enable flexbox layout */
-            flex-wrap: wrap; /* Allow wrapping of items */
-            justify-content: flex-end; /* Align items to the right */
+            margin-top: 10px;
+        }
+        .dog-list {
+            display: flex; /* Use flexbox for dog items */
+            flex-direction: row;
+            justify-content: flex-end; /* Align dog items to the left */
         }
         .dog-item {
+            margin-left: 10px;
             text-align: center;
-            background: #ffebee; /* Background for boxes */
-            border: 2px solid #ffb6c1; /* Border for boxes */
-            border-radius: 12px; /* Rounded corners */
-            padding: 10px; /* Padding inside boxes */
-            margin: 10px; /* Margin around boxes */
-            flex: 0 0 100px; /* Fixed width for boxes */
-            transition: transform 0.3s; /* Animation on hover */
         }
         .dog-item:hover {
             transform: scale(1.1); /* Scale up on hover */
@@ -195,27 +199,54 @@
             <center>
                 <h1>Global Pawsitioning System</h1>
             </center>
-            <div class="side-by-side">
-                <div class="dog-profile">
-                    <img src="dog_image.jpg" alt="Dog" class="dog-image">
-                    <h2 class="dog-name">Buddy</h2>
-                    <p>Breed: Labrador Retriever</p>
-                    <p>Age: 3 years</p>
-                    <p>Weight: 65 lbs</p>
-                </div>
+            <div class="content-container">
+                <!-- Dog Profile Section -->
 
-                <!-- Dogs You've Encountered Section -->
-                <h3 class="right-align-text">Friends met!</h3>
-                <div class="encountered-dogs">
-                    <div class="dog-list">
-                        <div class="dog-item"><img src="../static/dog1.jpg" alt="Dog 1">
-                            <span>Max</span>
-                        </div>
-                        <div class="dog-item"><img src="../static/dog2.jpg" alt="Dog 2">
-                            <span>Rocky</span>
-                        </div>
-                        <div class="dog-item"><img src="../static/dog3.jpg" alt="Dog 3">
-                            <span>Lucy</span>
+                <style>
+                    .circle-container {
+                        height: 10px; /* Set a height for the container; adjust as needed */
+                        width:  50px;  /* Set a width for the container; should be equal to height for a circle */
+                        margin: 10px auto; /* Center the container */
+                        border: 5px solid #ffb6c1; /* Border color */
+                        border-radius: 50%; /* Makes the border circular */
+                        overflow: hidden; /* Ensures image fits within the circle */
+                        display: flex; /* Center the image inside the container */
+                        align-items: center; /* Vertically center the image */
+                        justify-content: center; /* Horizontally center the image */
+                        padding-right: 20px;
+                        margin-right: 20px;
+                    }
+
+                    .circular-image {
+                        width:  250px; /* Full width of the container */
+                        height: 250px; /* Maintain aspect ratio */
+                        border-radius: 50%; /* Makes the image circular */
+                    }
+                </style>
+                <img src="../static/buddy.jpg" class="circular-image">
+                <div class="dog-profile">
+                    <h2 class="dog-name">Buddy</h2>
+                    <ul>
+                        <li>Labrado Retriever</li>
+                        <li>3 years old</li>
+                        <li>Weight: 65 lbs</li>
+                    </ul>
+                </div>
+        
+                <!-- Pet Pals Section -->
+                <div class="pet-pals">
+                    <h3 class="right-align-text">Pet Pals!</h3>
+                    <div class="encountered-dogs">
+                        <div class="dog-list">
+                            <div class="dog-item">
+                                <img src="../static/dog1.jpg" alt="Dog 1">
+                            </div>
+                            <div class="dog-item">
+                                <img src="../static/dog2.jpg" alt="Dog 2">
+                            </div>
+                            <div class="dog-item">
+                                <img src="../static/dog3.jpg" alt="Dog 3">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -277,12 +308,7 @@
         }
 
         // Initialize the map
-        var map = L.map('map').setView([51.505, -0.09], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+      
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>
