@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import seaborn as sns
 
 # Read the GPS data from the CSV file
 data = pd.read_csv('/home/home/Desktop/Projects/pawpatrol/data/gpsdata.csv', header=None, names=['timestamp', 'latitude', 'longitude'])
@@ -265,3 +266,5 @@ plt.show()
 # Print the total number of optimized points in the console
 print(f'Total number of optimized GPS points: {len(optimized_latitudes)}')
 
+###############################################################################
+###############################################################################
