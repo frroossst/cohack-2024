@@ -1,66 +1,80 @@
-import pandas as pd
-import numpy as np
+import csv
 import matplotlib.pyplot as plt
-from scipy.interpolate import interp1d
-import os
+import numpy as np
+from numpy.fft import fft, ifft
 
-# Step 1: Load GPS data from CSV
-gps_data = pd.read_csv('gpsdata.csv', header=None, names=['timestamp', 'latitude', 'longitude'])
+n_terms = 1_000_000  # Number of FFT terms to keep (you can adjust this for smoother/finer fit)
+n_terms = 2_500
 
-# Convert timestamps to a numerical format (seconds)
-timestamps = pd.to_datetime(gps_data['timestamp'])
-time_numeric = (timestamps - timestamps.min()).dt.total_seconds()
 
-# Step 2: Remove duplicate timestamps
-gps_data_unique = gps_data.drop_duplicates(subset='timestamp')
-timestamps_unique = pd.to_datetime(gps_data_unique['timestamp'])
-time_numeric_unique = (timestamps_unique - timestamps_unique.min()).dt.total_seconds()
+# Read data from gpsdata.csv
+latitudes = []
+longitudes = []
 
-# Step 3: Apply Fourier Transform to latitude and longitude
-lat_transform = np.fft.fft(gps_data_unique['latitude'])
-long_transform = np.fft.fft(gps_data_unique['longitude'])
+with open('gpsdata.csv', 'r') as file:
+    reader = csv.reader(file)
+    for row in reader:
+        latitudes.append(float(row[1]))
+        longitudes.append(float(row[2]))
 
-# Step 4: Reconstruct the signal using a subset of coefficients (for compression)
-num_coefficients = 50  # Adjust this number for different compression levels
-lat_reconstructed = np.fft.ifft(lat_transform[:num_coefficients])
-long_reconstructed = np.fft.ifft(long_transform[:num_coefficients])
+# Convert to numpy arrays
+latitudes = np.array(latitudes)
+longitudes = np.array(longitudes)
 
-# Step 5: Interpolate for a smooth curve
-interp_lat = interp1d(time_numeric_unique[:len(lat_reconstructed)], lat_reconstructed.real, kind='cubic')
-interp_long = interp1d(time_numeric_unique[:len(long_reconstructed)], long_reconstructed.real, kind='cubic')
+# Perform FFT on the data (we assume latitudes as the dependent variable on longitudes)
+fft_latitudes = fft(latitudes)
 
-# Create a finer time grid for plotting
-fine_time = np.linspace(time_numeric_unique.min(), time_numeric_unique.max(), num=1000)
+# Truncate higher-order terms to get a smoother line of best fit (keep only a few terms)
+fft_latitudes_truncated = np.zeros_like(fft_latitudes)
+fft_latitudes_truncated[:n_terms] = fft_latitudes[:n_terms]
 
-# Get interpolated values for smooth curve
-smooth_lat = interp_lat(fine_time)
-smooth_long = interp_long(fine_time)
+# Perform inverse FFT to get the smoothed latitudes
+smoothed_latitudes = ifft(fft_latitudes_truncated).real
 
-# Step 6: Plot the original and smooth reconstructed curves
-plt.figure(figsize=(12, 6))
-plt.plot(gps_data_unique['longitude'], gps_data_unique['latitude'], 'bo-', label='Original Data')
-plt.plot(smooth_long, smooth_lat, 'ro-', label='Smooth Reconstructed Data')
-plt.title('Original vs. Reconstructed GPS Data')
+# Plot the line of best fit
+plt.plot(longitudes, smoothed_latitudes, color='green', label='FFT Best Fit')
+# original data
+plt.scatter(longitudes, latitudes, color='blue', label='Original Data', alpha=0.5)
+
+# Add labels and title
 plt.xlabel('Longitude')
 plt.ylabel('Latitude')
+plt.title('Line of Best Fit using FFT')
+
+# Show the plot
 plt.legend()
-plt.grid()
 plt.show()
 
-# Step 7: Save the transformed data to a new CSV
-transformed_data = pd.DataFrame({
-    'lat_real': lat_transform.real,
-    'lat_imag': lat_transform.imag,
-    'long_real': long_transform.real,
-    'long_imag': long_transform.imag
-})
-transformed_data.to_csv('transformed_gpsdata.csv', index=False)
 
-# Step 8: Calculate the size of the original and transformed data in kilobytes
-original_size = os.path.getsize('gpsdata.csv') / 1024  # Size in KB
-transformed_size = os.path.getsize('transformed_gpsdata.csv') / 1024  # Size in KB
+# Function to check if FFT compression is effective
+def check_if_compressed(original_data, compressed_data, n_terms, total_data_points):
+    # 1. Mean Squared Error (MSE)
+    mse = np.mean((original_data - compressed_data) ** 2)
 
-# Print out the sizes
-print(f'Original CSV size: {original_size:.2f} KB')
-print(f'Transformed CSV size: {transformed_size:.2f} KB')
+    # 2. Compression Ratio
+    original_size = total_data_points  # Original data points size
+    compressed_size = n_terms * 2  # Each complex number has real and imaginary parts
+    compression_ratio = original_size / compressed_size
+
+    # 3. Data Savings
+    original_storage_bytes = original_size * 8  # Assuming each float is 8 bytes
+    compressed_storage_bytes = compressed_size * 8  # Storing real and imaginary parts
+    data_saved = (1 - (compressed_storage_bytes / original_storage_bytes)) * 100
+
+    # Display statistics
+    print(f"Mean Squared Error (MSE): {mse:.6f}")
+    print(f"Compression Ratio: {compression_ratio:.2f}")
+    print(f"Data Saved: {data_saved:.2f}%")
+    
+    return mse, compression_ratio, data_saved
+
+check_if_compressed(latitudes, smoothed_latitudes, n_terms, len(latitudes))
+
+# Print the best fit as a series of Fourier components
+coefficients = fft_latitudes[:n_terms]
+print("Equation of the best fit (Fourier Series):")
+for i, coef in enumerate(coefficients):
+    # print(f"Term {i}: {coef.real:.3f} cos({i} * x) + {coef.imag:.3f} sin({i} * x)")
+    continue
+
 
