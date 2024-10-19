@@ -277,9 +277,9 @@
                     const latLngs = points.map(point => [point.latitude, point.longitude]); // Convert to Leaflet format
                     
                     // Plot each point as a marker
-                    latLngs.forEach(latLng => {
-                        L.marker(latLng).addTo(map);
-                    });
+                    // latLngs.forEach(latLng => {
+                    //     L.marker(latLng).addTo(map);
+                    // });
                     
                     // Create a polyline to connect the points
                     const path = L.polyline(latLngs, { color: 'blue' }).addTo(map);
