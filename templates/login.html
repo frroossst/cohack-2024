@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/htmx.org"></script>
+    <title>Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Login</h1>
+        <form hx-post="/submit-login" hx-target="#result" hx-swap="innerHTML">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+
+            <button onclick="window.location.href = 'http://127.0.0.1:5000/dashboard';" type="submit" value="Submit request">Login</button>
+        </form>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Handle the response after the login request
+        function handleResponse(event) {
+            if (event.detail.xhr.status === 200) {
+                // If successful, redirect the user to the dashboard
+                window.location.href = '/dashboard';
+            } else {
+                // Handle the error case (e.g., show an error message)
+                const errorMessage = JSON.parse(event.detail.xhr.responseText).error;
+                document.getElementById('result').innerHTML = `<div class="error">${errorMessage}</div>`;
+            }
+        }
+    </script>
+
+    <div class="pawprint" style="background-image: url('static/pawprint.jpeg');"></div>
+    <div class="pawprint" style="background-image: url('static/pawprint.jpeg');"></div>
+    <div class="pawprint" style="background-image: url('static/pawprint.jpeg');"></div>
+
+    <script>
+        // Function to animate paw prints
+        function animatePawPrints() {
+            const pawprints = document.querySelectorAll('.pawprint');
+            pawprints.forEach(paw => {
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * window.innerHeight;
+                paw.style.transform = `translate(${x}px, ${y}px)`;
+                paw.style.opacity = '1';
+
+                // Use a timeout to delay fading out
+                setTimeout(() => {
+                    paw.style.opacity = '0';
+                }, 2000); // Change the duration to control how long it stays visible
+            });
+        }
+
+        // Call the animate function repeatedly
+        setInterval(animatePawPrints, 3000); // Every 3 seconds
+    </script>
+
+
+</body>
+</html>
