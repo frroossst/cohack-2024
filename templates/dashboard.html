@@ -32,6 +32,15 @@
             background-color: #fff;
             margin-right: 10px;
             transition: background-color 0.3s;
+            position: relative;
+        }
+        .tab-content {
+            transition: opacity 0.10s ease-in; /* Smooth transition for opacity */
+            opacity: 1; /* Fully visible by default */
+        }
+        .tab-content.hidden {
+            opacity: 0; /* Fully transparent when hidden */
+            pointer-events: none; /* Prevent interaction when hidden */
         }
         .tab:hover {
             background-color: #ffebee; /* Light hover effect */
@@ -75,9 +84,19 @@
             border-radius: 40px; /* Circular image */
             object-fit: cover;
         }
-        .notification-settings,
-        .geofence-settings {
+        .settings-box {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
             margin: 20px 0;
+        }
+        .settings-section {
+            background-color: #ffebee;
+            border: 2px solid #ffb6c1;
+            border-radius: 12px;
+            padding: 20px;
+            flex: 1 1 45%; /* Flexbox for responsive boxes */
+            margin: 10px;
         }
         button {
             background-color: #ff91af; /* Baby pink */
@@ -86,6 +105,7 @@
             border: none;
             border-radius: 8px;
             cursor: pointer;
+            margin-top: 10px;
         }
         button:hover {
             background-color: #ff7d9e; /* Darker pink on hover */
@@ -133,9 +153,9 @@
             <div class="encountered-dogs">
                 <h3>Dogs You've Encountered</h3>
                 <div class="dog-list">
-                    <div class="dog-item"><img src="dog1.jpg" alt="Dog 1"><span>Max</span></div>
-                    <div class="dog-item"><img src="dog2.jpg" alt="Dog 2"><span>Rocky</span></div>
-                    <div class="dog-item"><img src="dog3.jpg" alt="Dog 3"><span>Lucy</span></div>
+                    <div class="dog-item"><img src="../static/dog1.jpg" alt="Dog 1"><span>Max</span></div>
+                    <div class="dog-item"><img src="../static/dog2.jpg" alt="Dog 2"><span>Rocky</span></div>
+                    <div class="dog-item"><img src="../static/dog3.jpg" alt="Dog 3"><span>Lucy</span></div>
                 </div>
             </div>
         </div>
@@ -143,24 +163,51 @@
         <!-- Settings Tab -->
         <div id="settings" class="tab-content hidden">
             <h1>Settings</h1>
-            <div class="notification-settings">
-                <h3>Notification Settings</h3>
-                <label>
-                    <input type="checkbox"> Notify when dog leaves park
-                </label>
-                <br>
-                <label>
-                    <input type="checkbox"> Notify when out for greater than 120 minutes
-                </label>
-            </div>
+            <div class="settings-box">
 
-            <div class="geofence-settings">
-                <h3>Geofence Settings</h3>
-                <label for="radius">Set Geofence Radius (in meters):</label>
-                <input type="range" id="radius" min="100" max="1000" value="300">
-                <span id="radius-value">300 m</span>
-            </div>
+                <!-- Notification Settings -->
+                <div class="settings-section">
+                    <h3>Notification Settings</h3>
+                    <label><input type="checkbox"> Notify when dog leaves park</label><br>
+                    <label><input type="checkbox"> Notify when out for greater than 120 minutes</label><br>
+                </div>
 
+                <!-- Data Collection Settings -->
+                <div class="settings-section">
+                    <h3>Data Collection Settings</h3>
+                    <label><input type="checkbox"> Collect play habits data</label><br>
+                    <label><input type="checkbox"> Collect eating habits data</label><br>
+                </div>
+
+                <!-- Friends List Management -->
+                <div class="settings-section">
+                    <h3>Manage Friends List</h3>
+                    <label><input type="text" placeholder="Add friend..."></label><br>
+                    <button>Add Friend</button>
+                </div>
+
+                <!-- Geofence Settings -->
+                <div class="settings-section">
+                    <h3>Geofence Settings</h3>
+                    <label for="radius">Set Geofence Radius (in meters):</label>
+                    <input type="range" id="radius" min="100" max="1000" value="300" oninput="document.getElementById('radius-value').innerText = this.value + ' m'">
+                    <span id="radius-value">300 m</span>
+                </div>
+
+                <!-- Download Data -->
+                <div class="settings-section">
+                    <h3>Download Dog Data</h3>
+                    <button>Download All Data</button>
+                </div>
+
+                <!-- Change Profile Picture -->
+                <div class="settings-section">
+                    <h3>Change Profile Picture</h3>
+                    <input type="file" accept="image/*">
+                    <button>Upload</button>
+                </div>
+
+            </div>
             <button class="save-settings">Save Changes</button>
         </div>
     </div>
@@ -168,17 +215,35 @@
     <script>
         function showTab(tabName) {
             const tabs = document.querySelectorAll('.tab-content');
+            const activeTab = document.getElementById(tabName);
+    
+            // Fade out the currently visible tab
             tabs.forEach(tab => {
-                tab.classList.add('hidden');
+                if (!tab.classList.contains('hidden')) {
+                    tab.style.opacity = 0; // Start fading out
+                    setTimeout(() => {
+                        tab.classList.add('hidden'); // Hide after fade out
+                    }, 500); // Match the duration of the CSS transition
+                }
             });
-            document.getElementById(tabName).classList.remove('hidden');
-            
+    
+            // After fading out, show the new tab
+            setTimeout(() => {
+                activeTab.classList.remove('hidden'); // Remove hidden class
+                activeTab.style.opacity = 1; // Fade in
+            }, 500); // Same delay as above
+    
+            // Update active tab highlighting
             const tabItems = document.querySelectorAll('.tab');
             tabItems.forEach(tab => {
                 tab.classList.remove('active-tab');
+                // Set active tab based on tabName
+                if (tab.innerText === tabName.charAt(0).toUpperCase() + tabName.slice(1)) {
+                    tab.classList.add('active-tab');
+                }
             });
-            document.querySelector(`.tab:contains(${tabName})`).classList.add('active-tab');
         }
     </script>
+
 </body>
 </html>
