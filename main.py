@@ -72,5 +72,10 @@ def get_statistics():
 
     return jsonify({})
 
+@app.route('/version', methods=['GET'])
+def get_version():
+    # return html string showig a centered version number
+    return "<h4 style='text-align:center;'>v0.28.137</h4>"
+
 if __name__ == '__main__':
     app.run(debug=True)

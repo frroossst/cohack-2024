@@ -650,9 +650,14 @@
     <!-- Version and Logo -->
     <div class="footer" style="text-align: center; margin-top: 20px;">
         <img src="../static/pawpatrol.jpeg" alt="Dog Tracking App Logo" class="logo" style="width: 100px; height: auto; margin-bottom: 10px;">
-        <p style="font-size: 1.2em;">Version 0.28.0</p>
         <p style="font-size: 0.9em; color: #777;">© 2024 Global Pawsitioning System. All rights reserved.</p>
     </div>
+
+    <div id="version-info" hx-get="/version" hx-trigger="load">
+        Loading version...
+    </div>
+    <div id="version-display"></div>
+
     </div>
 
 
