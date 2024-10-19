@@ -388,12 +388,26 @@
 
                 function markActivityPoints(points) {
                     allPoints = points;
-                    console.log(allPoints);
                     const latLngs = points.map(point => [point.latitude, point.longitude]);
 
-                    // create markers for each activity point
-                    latLngs.forEach(latLng => {
-                        L.marker(latLng).addTo(map);
+                    const labels = ["Resting", "Park", "Start"]
+
+                    // Create markers for each activity point
+                    latLngs.forEach((latLng, index) => { // Change 'point' to 'latLng'
+                        // Add a marker to the map
+                        const marker = L.marker(latLng).addTo(map);
+
+                        const activityTimestamps = document.getElementById("activity-timestamps");
+                        activityTimestamps.innerHTML = ""; // Clear the activity-timestamps div
+
+                        // Check if the index is within the bounds of the labels array
+                        if (index < labels.length) {
+                            marker.bindTooltip(labels[index], { permanent: !true, direction: 'top' });
+                            const timestamp = new Date(points[index].timestamp).toLocaleString();
+                            // text in the format of, "Visited label at timestamp"
+                            activityTimestamps.innerHTML += `<p>Visited ${labels[index]} at ${timestamp}</p>`;
+                        }
+
                     });
                 }
             
@@ -508,7 +522,7 @@
 
             <div class="activity-breakdown">
                 <h3>Activity Overview</h3>
-                <canvas id="activityChart"></canvas>
+                <div id="activity-timestamps"></div>
             </div>
         </div>
 

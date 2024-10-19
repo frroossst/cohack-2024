@@ -1,6 +1,5 @@
 import numpy as np
 
-import numpy as np
 import pandas as pd
 
 def conc(df, lat_col='latitude', lon_col='longitude', threshold=0.0005):
