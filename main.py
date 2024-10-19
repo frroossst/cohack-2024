@@ -64,6 +64,13 @@ def get_activity_data():
     except Exception as e:
         return jsonify({"error": str(e)}), 500 
 
+@app.route('/statistics', methods=['GET'])
+def get_statistics():
+    df = pd.read_csv('/home/home/Desktop/Projects/pawpatrol/data/activity_points.csv', header=None, names=['timestamp', 'latitude', 'longitude'])
+    result_df = concatenate.conc(df, threshold=0.0009)
+    points = result_df.to_dict(orient='records')
+
+    return jsonify({})
 
 if __name__ == '__main__':
     app.run(debug=True)

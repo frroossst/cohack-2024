@@ -344,6 +344,7 @@
                 // API endpoint for fetching data points
                 const dataPointsAPI = "http://127.0.0.1:5000/data";
                 const activityPointsAPI = "http://127.0.0.1:5000/activity";
+                const statsAPI = "http://127.0.0.1:5000/statistics";
 
                 const loadingMessage = document.getElementById("loading-message");
                 loadingMessage.style.display = "block"; // Show the loading message
@@ -359,7 +360,7 @@
                             document.getElementById("map").style.display = "block"; // Show the map
 
                             setTimeout(() => {
-                                mapElement.style.opacity = "1"; // Trigger the fade-in effect
+                                document.getElementById("map").style.opacity = "1"; // Trigger the fade-in effect
                             }, 50); // Small delay to ensure the display change takes effect before fading
 
                         }, 2000); // Delay to simulate loading time
@@ -371,6 +372,7 @@
                     .then(response => response.json())
                     .then(data => {
                         markActivityPoints(data);
+                        displayActivityStats(data);
                     })
                     .catch(error => console.error('Error fetching data:', error));
             
@@ -416,6 +418,42 @@
                         }
 
                     });
+                }
+
+                function displayActivityStats(points) {
+                    // fetch from /statistics endpoint
+                    const activityTimestamps = document.getElementById("activity-timestamps");
+                    const labels = ["Resting", "Park", "Start"];
+
+                    let acitivityTimestamps = document.getElementById("activity-timestamps");
+                    acitivityTimestamps.innerHTML = ""; // Clear the activity-timestamps div
+
+                    /*
+                    fetch(statsAPI) // Fetch the statistics data
+                        .then(response => response.json())
+                        .then(data => {
+                            const stats = data.statistics;
+                            const restingTime = stats.restingTime;
+                            const parkTime = stats.parkTime;
+                            const startTime = stats.startTime;
+
+                            // Display the statistics
+                            activityTimestamps.innerHTML += `<h3>Activity Statistics</h3>`;
+                            activityTimestamps.innerHTML += `<p>Resting Time: ${restingTime} minutes</p>`;
+                            activityTimestamps.innerHTML += `<p>Park Time: ${parkTime} minutes</p>`;
+                            activityTimestamps.innerHTML += `<p>Start Time: ${startTime} minutes</p>`;
+
+                            // Display the activity breakdown
+                            displayActivityBreakdown(points);
+                        })
+                        .catch(error => console.error('Error fetching data:', error));
+                        */
+
+                        activityTimestamps.innerHTML += `<ul>`;
+                        acitivityTimestamps.innerHTML += `<li>Started walking at 1:57 AM (local time)</li>`;
+                        activityTimestamps.innerHTML += `<li>Rested for a few minutes at 2:05 AM</li>`;
+                        activityTimestamps.innerHTML += `<li>Visited Park for 7 minutes</li>`;
+                        activityTimestamps.innerHTML += `</ul>`;
                 }
             
                 function plotPointsAndSetupTimeline(points) {
@@ -533,27 +571,90 @@
             </div>
         </div>
 
-        <!-- Settings Tab -->
-        <div id="settings" class="tab-content hidden">
-            <h1>Settings</h1>
-            <div class="settings-box">
-                <!-- Notification Settings -->
-                <div class="settings-section">
-                    <h3>Notification Settings</h3>
-                    <label><input type="checkbox"> Notify when dog leaves park</label><br>
-                    <label><input type="checkbox"> Notify when out for greater than 120 minutes</label><br>
-                </div>
+    <!-- Settings Tab --> 
+     <!-- Settings Tab -->
+<div id="settings" class="tab-content hidden" style="background-color: #f9f9f9; font-family: 'Yu Gothic', sans-serif; color: #333; padding: 20px;">
+    <h1 style="font-size: 2.5em; text-align: center; margin: 20px 0; color: #ff6f61;">🐾 Dog Tracking App Settings 🐾</h1>
+    
+    <div class="settings-container" style="max-width: 800px; margin: auto;">
 
-                <!-- Data Collection Settings -->
-                <div class="settings-section">
-                    <h3>Data Collection Settings</h3>
-                    <label><input type="checkbox"> Collect location data</label><br>
-                    <label><input type="checkbox"> Collect health data</label><br>
-                </div>
-            </div>
-            <button>Save Settings</button>
+        <!-- Notification Settings Box -->
+        <div class="settings-box" style="margin-bottom: 20px; padding: 15px; border: 2px solid #ff9f00; border-radius: 15px; background: #ffffff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+            <h3 style="font-size: 1.8em; color: #ff9f00;">🔔 Notification Settings</h3>
+            <label style="display: block; margin: 10px 0;"><input type="checkbox"> Notify when dog leaves park</label>
+            <label style="display: block; margin: 10px 0;"><input type="checkbox"> Notify when out for greater than 120 minutes</label>
+            <label style="display: block; margin: 10px 0;"><input type="checkbox"> Set reminder to walk the dog</label>
+            <label style="display: block; margin: 10px 0;"><input type="checkbox"> Daily summary notifications</label>
         </div>
+
+        <!-- Data Management Settings Box -->
+        <div class="settings-box" style="margin-bottom: 20px; padding: 15px; border: 2px solid #ff9f00; border-radius: 15px; background: #ffffff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+            <h3 style="font-size: 1.8em; color: #ff9f00;">📊 Data Management</h3>
+            <label style="display: block; margin: 10px 0;"><input type="checkbox"> Collect location data</label>
+            <label style="display: block; margin: 10px 0;"><input type="checkbox"> Collect health data</label>
+            <label style="display: block; margin: 10px 0;"><input type="checkbox"> Download all dog’s data</label>
+            <label style="display: block; margin: 10px 0;"><input type="checkbox"> Request to delete dog’s data</label>
+        </div>
+
+        <!-- User Preferences Box -->
+        <div class="settings-box" style="margin-bottom: 20px; padding: 15px; border: 2px solid #ff9f00; border-radius: 15px; background: #ffffff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+            <h3 style="font-size: 1.8em; color: #ff9f00;">🌈 User Preferences</h3>
+            <label for="units">Units:</label>
+            <select id="units" style="width: 100%; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                <option value="metric">Metric (km, °C)</option>
+                <option value="imperial">Imperial (mi, °F)</option>
+            </select>
+            <label for="language">Language:</label>
+            <select id="language" style="width: 100%; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                <option value="en">English</option>
+                <option value="jp">Japanese</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+            </select>
+            <label style="display: block; margin: 10px 0;"><input type="checkbox"> Enable dark mode</label>
+        </div>
+
+        <!-- Account Settings Box -->
+        <div class="settings-box" style="margin-bottom: 20px; padding: 15px; border: 2px solid #ff9f00; border-radius: 15px; background: #ffffff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+            <h3 style="font-size: 1.8em; color: #ff9f00;">👤 Account Settings</h3>
+            <label style="display: block; margin: 10px 0;"><input type="checkbox"> Receive promotional emails</label>
+            <label style="display: block; margin: 10px 0;"><input type="checkbox"> Enable two-factor authentication</label>
+            <label for="password">Change Password:</label>
+            <input type="password" id="password" placeholder="New Password" style="width: 100%; padding: 10px; border-radius: 5px; margin: 10px 0;">
+            <button style="margin-top: 10px; background-color: #ff6f61; color: white; border: none; padding: 10px 15px; border-radius: 5px;">Update Password</button>
+        </div>
+
+        <!-- Emergency Contacts Box -->
+        <div class="settings-box" style="margin-bottom: 20px; padding: 15px; border: 2px solid #ff9f00; border-radius: 15px; background: #ffffff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+            <h3 style="font-size: 1.8em; color: #ff9f00;">🚨 Emergency Contacts</h3>
+            <label for="emergency-contact">Add Emergency Contact:</label>
+            <input type="text" id="emergency-contact" placeholder="Contact Name" style="width: calc(50% - 10px); padding: 10px; border-radius: 5px; margin: 10px 5px 10px 0;">
+            <input type="tel" placeholder="Phone Number" style="width: calc(50% - 10px); padding: 10px; border-radius: 5px; margin: 10px 0;">
+            <button style="margin-top: 10px; background-color: #ff6f61; color: white; border: none; padding: 10px 15px; border-radius: 5px;">Add Contact</button>
+        </div>
+
+        <!-- Friendship Management Box -->
+        <div class="settings-box" style="margin-bottom: 20px; padding: 15px; border: 2px solid #ff9f00; border-radius: 15px; background: #ffffff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+            <h3 style="font-size: 1.8em; color: #ff9f00;">🤝 Manage Friendships</h3>
+            <label for="friendship-contact">Add a Friend:</label>
+            <input type="text" id="friendship-contact" placeholder="Friend's Name" style="width: calc(50% - 10px); padding: 10px; border-radius: 5px; margin: 10px 5px 10px 0;">
+            <input type="email" placeholder="Friend's Email" style="width: calc(50% - 10px); padding: 10px; border-radius: 5px; margin: 10px 0;">
+            <button style="margin-top: 10px; background-color: #ff6f61; color: white; border: none; padding: 10px 15px; border-radius: 5px;">Add Friend</button>
+            <p style="margin-top: 10px; color: #555;">Manage your friendships to share your dog’s adventures!</p>
+        </div>
+
     </div>
+
+    <button style="margin: 20px 0; background-color: #ff6f61; color: white; border: none; padding: 15px 25px; border-radius: 5px; width: 100%;">Save Settings</button>
+
+    <!-- Version and Logo -->
+    <div class="footer" style="text-align: center; margin-top: 20px;">
+        <img src="../static/pawpatrol.jpeg" alt="Dog Tracking App Logo" class="logo" style="width: 100px; height: auto; margin-bottom: 10px;">
+        <p style="font-size: 1.2em;">Version 0.28.0</p>
+        <p style="font-size: 0.9em; color: #777;">© 2024 Dog Tracking App. All rights reserved.</p>
+    </div>
+</div>
+
 
     <script>
         function showTab(tabName) {
