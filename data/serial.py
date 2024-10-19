@@ -1,50 +1,28 @@
-import serial
+from serial import *
 import time
-import sys
-import serial.tools.list_ports
 
+# Set up serial connection
+# Change 'COM3' to your port (e.g., 'COM3' on Windows, '/dev/ttyUSB0' or '/dev/ttyACM0' on Linux)
+arduino_port = 'COM11'  # Replace with your Arduino port
+baud_rate = 115200  # Make sure this matches the baud rate set in your Arduino sketch
+output_file = 'arduino_output.txt'  # Name of the file where data will be saved
 
-def read_serial(port, baudrate, output_file):
+# Initialize serial connection
+ser = Serial(arduino_port, baud_rate)
+time.sleep(2)  # Wait for the connection to establish
+
+# Open file to save data
+with open(output_file, 'w') as file:
+    print("Collecting data... Press Ctrl+C to stop.")
     try:
-        # Open the serial port
-        with serial.Serial(port, baudrate, timeout=1) as ser, open(output_file, 'wb') as file:
-            print(f"Reading from {port} at {baudrate} baud...")
-            while True:
-                # Read a line of data from the serial port
-                data = ser.read_until()  # You can adjust this to read a specific number of bytes or use ser.readline()
-
-                if data:
-                    # Write the data to the file
-                    file.write(data)
-                    file.flush()  # Ensure data is written immediately
-                    print(data)  # Optional: print data to the console for monitoring
-
-                time.sleep(0.1)  # Optional: add a small delay to avoid high CPU usage
-
-    except serial.SerialException as e:
-        print(f"Error: {e}")
+        while True:
+            # Read a line from the serial port
+            if ser.in_waiting > 0:
+                line = ser.readline().decode('utf-8').strip()  # Read, decode, and remove any extra spaces
+                print(line)  # Print the data to the console
+                file.write(line + '\n')  # Write the data to a file
     except KeyboardInterrupt:
-        print("Interrupted by user. Exiting...")
+        print("Data collection stopped.")
 
-
-def find_serial_ports():
-    ports = serial.tools.list_ports.comports()
-    return [port.device for port in ports]
-
-
-if __name__ == "__main__":
-    # Find available COM ports
-    available_ports = find_serial_ports()
-
-    if not available_ports:
-        print("No serial ports found.")
-        sys.exit(1)
-
-    # Use the first available port
-    serial_port = available_ports[0]
-    baud_rate = 115200  # Change to your desired baud rate
-    output_file_name = 'output.txt'  # Change to your desired output file name
-
-    print(f"Using serial port: {serial_port}")
-    read_serial(serial_port, baud_rate, output_file_name)
-
+# Close the serial connection
+ser.close()
