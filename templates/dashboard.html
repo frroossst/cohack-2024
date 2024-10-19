@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Team Tau</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/htmx.org@2.0.3"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -88,7 +89,7 @@
             border: 5px solid #ffb6c1;
             border-radius: 15px;
             padding: 10px;
-            height: 500px; /* Set height for the map */
+            height: 750px; /* Set height for the map */
             position: relative; /* Added for proper map placement */
         }
         .activity-breakdown {
@@ -151,14 +152,6 @@
         }
 
         /* New styles for the paw prints and friends list */
-        .paw-print {
-            position: absolute;
-            width: 50px; /* Size of paw print */
-            height: 50px; /* Size of paw print */
-            background-image: url('paw_print.png'); /* Replace with actual paw print image */
-            background-size: contain;
-            background-repeat: no-repeat;
-        }
         .friends-list {
             position: absolute;
             top: 20px; /* Adjust as necessary */
@@ -258,6 +251,43 @@
                     <div id="map" style="width: 100%; height: 100%;"></div> <!-- Map container -->
                 </div>
             </div>
+            <script>
+                // Initialize the map
+                var map = L.map('map').setView([52.119598, -106.65289], 13); // Zoom level 13
+                            
+                // Add a tile layer (OpenStreetMap)
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+                
+                // API endpoint for fetching data points
+                const dataPointsAPI = "http://127.0.0.1:5000/data";
+                fetch(dataPointsAPI)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Call function to plot points and path with the expected format
+                        plotPointsAndPath(data);
+                    })
+                    .catch(error => console.error('Error fetching data:', error));
+                
+                // Function to plot points and path
+                function plotPointsAndPath(points) {
+                    // Assuming the points are in the format [{ latitude: <value>, longitude: <value> }, ...]
+                    const latLngs = points.map(point => [point.latitude, point.longitude]); // Convert to Leaflet format
+                    
+                    // Plot each point as a marker
+                    latLngs.forEach(latLng => {
+                        L.marker(latLng).addTo(map);
+                    });
+                    
+                    // Create a polyline to connect the points
+                    const path = L.polyline(latLngs, { color: 'blue' }).addTo(map);
+                    
+                    // Zoom the map to fit all points
+                    map.fitBounds(path.getBounds());
+                }
+            </script>
 
             <div class="timeline">
                 <h3>Data Collected From:</h3>
