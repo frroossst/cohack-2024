@@ -251,48 +251,225 @@
                     <div id="map" style="width: 100%; height: 100%;"></div> <!-- Map container -->
                 </div>
             </div>
+            <style>
+                 input[type="range"] {
+                    -webkit-appearance: none;
+                    width: 100%;
+                    height: 8px;
+                    background: #ddd; /* Background color of the track */
+                    border-radius: 5px; /* Rounded corners */
+                    outline: none; /* Remove default outline */
+                    opacity: 0.7; /* Transparency of the track */
+                    transition: opacity .2s; /* Transition effect on hover */
+                }
+                input[type="range"]:hover {
+                    opacity: 1; /* Full opacity on hover */
+                }
+                input[type="range"]::-webkit-slider-thumb {
+                    -webkit-appearance: none; /* Remove default styling */
+                    appearance: none; /* Remove default styling */
+                    width: 20px; /* Width of the thumb */
+                    height: 20px; /* Height of the thumb */
+                    border-radius: 50%; /* Make the thumb circular */
+                    background: #ff0000; /* Color of the thumb */
+                    cursor: pointer; /* Cursor on hover */
+                    transition: background 0.2s; /* Transition effect on hover */
+                }
+                input[type="range"]::-webkit-slider-thumb:hover {
+                    background: #e60000; /* Darker red on hover */
+                }
+                input[type="range"]::-moz-range-thumb {
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 50%;
+                    background: #ff0000;
+                    cursor: pointer;
+                    transition: background 0.2s;
+                }
+                input[type="range"]::-moz-range-thumb:hover {
+                    background: #e60000;
+                }
+                #timestamp-display {
+                    margin-top: 10px;
+                    font-size: 16px;
+                }
+                .controls {
+                    margin-top: 10px;
+                }
+                button {
+                    padding: 8px 12px;
+                    margin-right: 5px;
+                    background-color: #ff0000;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 16px;
+                }
+                button:hover {
+                    background-color: #e60000;
+                }
+                select {
+                    padding: 8px;
+                    margin-left: 5px;
+                    border: none;
+                    border-radius: 5px;
+                    font-size: 16px;
+                }
+            </style>
+            <input type="range" id="timeline" min="0" value="0" step="1" style="width: 100%;">
+            <div id="timestamp-display"></div>
+            <div class="controls">
+                <button id="play-pause-btn">Play</button>
+                <button id="stop-btn">Stop</button>
+                <label for="speed-select">Speed:</label>
+                <select id="speed-select">
+                    <option value="0.5">0.5x</option>
+                    <option value="1" selected>1x</option>
+                    <option value="2">2x</option>
+                    <option value="10">10x</option>
+                </select>
+            </div>
             <script>
                 // Initialize the map
                 var map = L.map('map').setView([52.119598, -106.65289], 13); // Zoom level 13
-                            
+            
                 // Add a tile layer (OpenStreetMap)
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 }).addTo(map);
-                
+            
                 // API endpoint for fetching data points
                 const dataPointsAPI = "http://127.0.0.1:5000/data";
                 fetch(dataPointsAPI)
                     .then(response => response.json())
                     .then(data => {
                         // Call function to plot points and path with the expected format
-                        plotPointsAndPath(data);
+                        plotPointsAndSetupTimeline(data);
                     })
                     .catch(error => console.error('Error fetching data:', error));
-                
-                // Function to plot points and path
-                function plotPointsAndPath(points) {
-                    // Assuming the points are in the format [{ latitude: <value>, longitude: <value> }, ...]
+            
+                let allPoints = [];
+                let timelineSlider = document.getElementById("timeline");
+                let timestampDisplay = document.getElementById("timestamp-display");
+                let polyline; // To store the polyline object
+                let playPauseBtn = document.getElementById("play-pause-btn");
+                let stopBtn = document.getElementById("stop-btn");
+                let interval; // for playback interval
+                let isPlaying = false; // To track playback state
+                let speed = 1000; // Playback speed in milliseconds
+                let currentIndex = 0;
+            
+                function plotPointsAndSetupTimeline(points) {
+                    allPoints = points; // Store all points
                     const latLngs = points.map(point => [point.latitude, point.longitude]); // Convert to Leaflet format
+            
+                    // Draw the initial polyline
+                    drawPolyline(latLngs);
+                    setupTimeline();
+                }
+            
+                function drawPolyline(latLngs) {
+                    // Remove existing polyline if it exists
+                    if (polyline) {
+                        map.removeLayer(polyline);
+                    }
+            
+                    // Create a new polyline
+                    polyline = L.polyline(latLngs, { color: 'blue', weight: 4 }).addTo(map);
+
+                    map.fitBounds(polyline.getBounds()); // Fit the map to the bounds of the polyline
+                }
+            
+                // Setup the timeline slider
+                function setupTimeline() {
+                    const timestamps = allPoints.map(point => new Date(point.timestamp).getTime());
+                    const minTimestamp = Math.min(...timestamps);
+                    const maxTimestamp = Math.max(...timestamps);
+            
+                    timelineSlider.min = minTimestamp;
+                    timelineSlider.max = maxTimestamp;
+                    timelineSlider.value = maxTimestamp; // Start slider at max timestamp
+                    updateTimestampDisplay(maxTimestamp); // Display the initial timestamp
+            
+                    // Event listener for the slider
+                    timelineSlider.addEventListener('input', () => {
+                        const selectedTime = parseInt(timelineSlider.value);
+                        updatePolyline(selectedTime);
+                        updateTimestampDisplay(selectedTime);
+                        currentIndex = timestamps.findIndex(time => time >= selectedTime); // Update current index
+                    });
+            
+                    // Initially display polyline for all points up to max timestamp
+                    updatePolyline(maxTimestamp);
+                }
+            
+                // Update polyline based on the selected timestamp
+                function updatePolyline(selectedTime) {
+                    const filteredPoints = allPoints.filter(point => new Date(point.timestamp).getTime() <= selectedTime);
+                    const latLngs = filteredPoints.map(point => [point.latitude, point.longitude]); // Convert to Leaflet format
                     
-                    // Plot each point as a marker
-                    // latLngs.forEach(latLng => {
-                    //     L.marker(latLng).addTo(map);
-                    // });
-                    
-                    // Create a polyline to connect the points
-                    const path = L.polyline(latLngs, { color: 'blue' }).addTo(map);
-                    
-                    // Zoom the map to fit all points
-                    map.fitBounds(path.getBounds());
+                    drawPolyline(latLngs); // Redraw the polyline with filtered points
+                }
+            
+                // Update the timestamp display
+                function updateTimestampDisplay(selectedTime) {
+                    const date = new Date(selectedTime);
+                    timestampDisplay.innerText = date.toLocaleString(); // Format the date as desired
+                }
+
+                // Play and Pause functionality
+                playPauseBtn.addEventListener('click', () => {
+                    if (isPlaying) {
+                        pausePlayback();
+                    } else {
+                        playPlayback();
+                    }
+                });
+
+                stopBtn.addEventListener('click', () => {
+                    stopPlayback();
+                });
+
+                function playPlayback() {
+                    if (currentIndex >= allPoints.length) {
+                        currentIndex = 0; // Reset to the start if we reached the end
+                        timelineSlider.value = timelineSlider.min; // Move slider to start
+                        updatePolyline(timelineSlider.value); // Update polyline
+                        updateTimestampDisplay(timelineSlider.value); // Update timestamp display
+                    }
+
+                    isPlaying = true;
+                    playPauseBtn.innerText = "Pause";
+                    const timestamps = allPoints.map(point => new Date(point.timestamp).getTime());
+                    interval = setInterval(() => {
+                        if (currentIndex < allPoints.length) {
+                            const time = timestamps[currentIndex];
+                            timelineSlider.value = time;
+                            updatePolyline(time);
+                            updateTimestampDisplay(time);
+                            currentIndex++;
+                        } else {
+                            stopPlayback(); // Stop playback if we reach the end
+                        }
+                    }, 1000); // Adjust speed (1000 ms = 1 second)
+                }
+
+                function pausePlayback() {
+                    isPlaying = false;
+                    playPauseBtn.innerText = "Play";
+                    clearInterval(interval);
+                }
+
+                function stopPlayback() {
+                    pausePlayback(); // Ensure playback is paused
+                    currentIndex = 0; // Reset index
+                    timelineSlider.value = timelineSlider.min; // Reset slider to minimum
+                    updatePolyline(timelineSlider.value); // Update polyline
+                    updateTimestampDisplay(timelineSlider.value); // Update timestamp display
                 }
             </script>
-
-            <div class="timeline">
-                <h3>Data Collected From:</h3>
-                <p>October 1, 2024, 10:00 AM - October 1, 2024, 5:00 PM</p>
-            </div>
 
             <div class="activity-breakdown">
                 <h3>Activity Overview</h3>
