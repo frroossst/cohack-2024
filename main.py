@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, jsonify, Response, redirect, 
 from typing import Union
 import pandas as pd
 
+from data import concatenate
+
 app = Flask(__name__)
 
 
@@ -22,8 +24,8 @@ def hello():
 def get_gps_data():
     try:
         # Read the CSV file into a pandas DataFrame
-        df = pd.read_csv('/home/home/Desktop/Projects/pawpatrol/data/gpsdata.csv', header=None, names=['timestamp', 'latitude', 'longitude'])
-        
+        df = pd.read_csv('/home/home/Desktop/Projects/pawpatrol/data/cutesiedata.csv', header=None, names=['timestamp', 'latitude', 'longitude'])
+
         # Convert the DataFrame to a list of dictionaries
         points = df.to_dict(orient='records')
         
@@ -31,6 +33,23 @@ def get_gps_data():
         return jsonify(points)
     except Exception as e:
         return jsonify({"error": str(e)}), 500 
+
+@app.route('/activity', methods=['GET'])
+def get_activity_data():
+    try:
+        # Read the CSV file into a pandas DataFrame
+        df = pd.read_csv('/home/home/Desktop/Projects/pawpatrol/data/activity_points.csv', header=None, names=['timestamp', 'latitude', 'longitude'])
+
+        result_df = concatenate.conc(df, threshold=0.0009)
+        
+        # Convert the DataFrame to a list of dictionaries
+        points = result_df.to_dict(orient='records')
+
+        # Return the points as a JSON response
+        return jsonify(points)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500 
+
 
 if __name__ == '__main__':
     app.run(debug=True)

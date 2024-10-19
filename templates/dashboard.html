@@ -341,6 +341,7 @@
             
                 // API endpoint for fetching data points
                 const dataPointsAPI = "http://127.0.0.1:5000/data";
+                const activityPointsAPI = "http://127.0.0.1:5000/activity";
 
                 const loadingMessage = document.getElementById("loading-message");
                 loadingMessage.style.display = "block"; // Show the loading message
@@ -355,6 +356,14 @@
                             plotPointsAndSetupTimeline(data);
                             document.getElementById("map").style.display = "block"; // Show the map
                         }, 1000); // Delay to simulate loading time
+                    })
+                    .catch(error => console.error('Error fetching data:', error));
+
+
+                fetch(activityPointsAPI)
+                    .then(response => response.json())
+                    .then(data => {
+                        markActivityPoints(data);
                     })
                     .catch(error => console.error('Error fetching data:', error));
             
@@ -376,6 +385,17 @@
                         playPlayback(); // Restart playback with new speed
                     }
                 });
+
+                function markActivityPoints(points) {
+                    allPoints = points;
+                    console.log(allPoints);
+                    const latLngs = points.map(point => [point.latitude, point.longitude]);
+
+                    // create markers for each activity point
+                    latLngs.forEach(latLng => {
+                        L.marker(latLng).addTo(map);
+                    });
+                }
             
                 function plotPointsAndSetupTimeline(points) {
                     allPoints = points; // Store all points
