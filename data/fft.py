@@ -11,7 +11,7 @@ n_terms = 2_500
 latitudes = []
 longitudes = []
 
-with open('gpsdata.csv', 'r') as file:
+with open('/home/home/Desktop/Projects/pawpatrol/data/gpsdata.csv', 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         latitudes.append(float(row[1]))
@@ -43,7 +43,7 @@ plt.title('Line of Best Fit using FFT')
 
 # Show the plot
 plt.legend()
-plt.show()
+# plt.show()
 
 
 # Function to check if FFT compression is effective
@@ -74,7 +74,87 @@ check_if_compressed(latitudes, smoothed_latitudes, n_terms, len(latitudes))
 coefficients = fft_latitudes[:n_terms]
 print("Equation of the best fit (Fourier Series):")
 for i, coef in enumerate(coefficients):
-    # print(f"Term {i}: {coef.real:.3f} cos({i} * x) + {coef.imag:.3f} sin({i} * x)")
+    print(f"Term {i}: {coef.real:.3f} cos({i} * x) + {coef.imag:.3f} sin({i} * x)")
     continue
+
+# First, let's examine the coefficients
+print("First few coefficients magnitudes:")
+for i in range(min(10, len(coefficients))):
+    print(f"Component {i}: {np.abs(coefficients[i]):.2e}")
+
+def plot_fourier_components_improved(coefficients, num_components_to_plot=5):
+    # Create a figure with subplots
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 15))
+    
+    # Generate x values for plotting
+    x = np.linspace(0, 2*np.pi, 1000)
+    
+    # Skip the DC component (index 0) when plotting individual waves
+    for i in range(1, min(num_components_to_plot + 1, len(coefficients))):
+        # Extract amplitude and phase from complex coefficient
+        amplitude = np.abs(coefficients[i])
+        phase = np.angle(coefficients[i])
+        
+        # Generate the component wave without normalizing to see actual contribution
+        wave = np.real(amplitude * np.exp(1j * (i * x + phase)))
+        
+        # Plot on first subplot
+        ax1.plot(x, wave, label=f'Component {i}')
+    
+    ax1.set_title('Individual Fourier Components (Actual Scale)')
+    ax1.set_xlabel('x')
+    ax1.set_ylabel('Amplitude')
+    ax1.grid(True)
+    ax1.legend()
+    
+    # Plot combined wave (excluding DC component)
+    combined_wave = np.zeros_like(x)
+    for i in range(1, len(coefficients)):
+        amplitude = np.abs(coefficients[i])
+        phase = np.angle(coefficients[i])
+        combined_wave += np.real(amplitude * np.exp(1j * (i * x + phase)))
+    
+    ax2.plot(x, combined_wave, 'r-', label='Combined Wave (AC Components)')
+    ax2.set_title('Combined Fourier Series (Without DC Component)')
+    ax2.set_xlabel('x')
+    ax2.set_ylabel('Amplitude')
+    ax2.grid(True)
+    ax2.legend()
+    
+    # Plot frequency spectrum (magnitude of coefficients)
+    frequencies = np.arange(len(coefficients))
+    magnitudes = np.abs(coefficients)
+    
+    # Plot in log scale to better see the distribution
+    ax3.semilogy(frequencies[1:], magnitudes[1:], 'b.')  # Skip DC component
+    ax3.set_title('Frequency Spectrum (Log Scale)')
+    ax3.set_xlabel('Frequency')
+    ax3.set_ylabel('Magnitude (log scale)')
+    ax3.grid(True)
+    
+    plt.tight_layout()
+    return fig
+
+# Create the visualization
+fig = plot_fourier_components_improved(coefficients, num_components_to_plot=10)
+plt.show()
+
+# Let's also look at the relative contributions of components
+magnitudes = np.abs(coefficients)
+total_power = np.sum(magnitudes**2)
+relative_power = (magnitudes**2 / total_power) * 100
+
+print("\nRelative power contribution of first 10 components:")
+for i in range(min(10, len(coefficients))):
+    print(f"Component {i}: {relative_power[i]:.2f}%")
+
+# Plot relative power contribution
+plt.figure(figsize=(12, 6))
+plt.bar(range(min(20, len(coefficients))), relative_power[:20])
+plt.title('Relative Power Contribution of First 20 Components')
+plt.xlabel('Component Index')
+plt.ylabel('Relative Power (%)')
+plt.grid(True)
+plt.show()
 
 

@@ -210,16 +210,27 @@ def opt1_opt2(data: DataSamples) -> DataSamples:
 #                                                                            #
 ###############################################################################
 
-def plot(data: DataSamples, title: str):
+def plot(data: DataSamples, title: str, total_points: int = None, original_points: int = None):
     latitudes, longitudes = zip(*data.get())  # Unzip into latitudes and longitudes
     plt.figure(figsize=(10, 6))
-    plt.plot(longitudes, latitudes, color='red', marker='o', linestyle='-', markersize=2)
+    
+    if 'Linear' in title:  # Special handling for Linear Path Optimization
+        plt.plot(longitudes[:-1], latitudes[:-1], color='red', marker='o', linestyle='-', markersize=2)  # Exclude the last point for the line
+        plt.plot(longitudes[-1:], latitudes[-1:], color='red', marker='o', linestyle='', markersize=5)  # Plot the last point without a line
+    else:
+        plt.plot(longitudes, latitudes, color='red', marker='o', linestyle='-', markersize=2)
+    
+    if total_points is not None and original_points is not None:
+        percent_decrease = ((original_points - total_points) / original_points) * 100
+        plt.text(0.05, 0.95, f'Total Points: {total_points}\nPercent Decrease: {percent_decrease:.2f}%', 
+                 transform=plt.gca().transAxes, fontsize=10, verticalalignment='top',
+                 bbox=dict(facecolor='white', alpha=0.8, edgecolor='gray', boxstyle='round,pad=0.3'))
+
     plt.title(title)
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
     plt.grid()
     plt.show()
-
 
 def plot_all(data: DataSamples, opt1: DataSamples, opt2: DataSamples, both: DataSamples):
     original_latitudes, original_longitudes = zip(*data.get())
@@ -239,20 +250,28 @@ def plot_all(data: DataSamples, opt1: DataSamples, opt2: DataSamples, both: Data
     plt.grid()
     plt.show()
 
-
 def main():
     data = original()
-    opt1 = linear_path_optimization(data)
-    opt2 = threshold_bubble_optimization(data)
-    both = opt1_opt2(data)
+    total_points = data.len()
 
-    plot(data, 'Original GPS Data')
-    plot(opt1, 'Optimized GPS Data (Linear Path Optimization)')
-    plot(opt2, 'Optimized GPS Data (Threshold Bubble Optimization)')
-    plot(both, 'Optimized GPS Data (Both Optimizations)')
+    opt1 = linear_path_optimization(data)
+    opt1_points = opt1.len()
+
+    opt2 = threshold_bubble_optimization(data)
+    opt2_points = opt2.len()
+
+    both = opt1_opt2(data)
+    both_points = both.len()
+
+    plot(data, 'Original GPS Data', total_points=total_points, original_points=total_points)
+    plot(opt1, 'Optimized GPS Data (Linear Path Optimization)', total_points=opt1_points, original_points=total_points)
+    plot(opt2, 'Optimized GPS Data (Threshold Bubble Optimization)', total_points=opt2_points, original_points=total_points)
+    plot(both, 'Optimized GPS Data (Both Optimizations)', total_points=both_points, original_points=total_points)
 
     plot_all(data, opt1, opt2, both)
 
-
 if __name__ == "__main__":
     main()
+
+
+
