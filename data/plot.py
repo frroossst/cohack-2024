@@ -3,6 +3,19 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 
+class DataSamples:
+    def __init__(self):
+        self.data = []  # Initialize as an empty list
+
+    def len(self):
+        return len(self.data)
+
+    def set(self, data):
+        self.data = data  # Expect data to be a list of tuples (latitude, longitude)
+
+    def get(self):
+        return self.data
+
 
 # Haversine formula to calculate distance between two GPS points
 def haversine(coord1, coord2):
@@ -12,34 +25,34 @@ def haversine(coord1, coord2):
 
     dlat = lat2 - lat1
     dlon = lon2 - lon1
-    a = np.sin(dlat / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2)**2
+    a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
     c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
     distance = R * c  # Distance in meters
     return distance
 
-# Read the GPS data from the CSV file
-data = pd.read_csv('/home/home/Desktop/Projects/pawpatrol/data/gpsdata.csv', header=None, names=['timestamp', 'latitude', 'longitude'])
 
-# Count the total number of points
-total_points = len(data)
+# Function to calculate the angle between two points in degrees
+def calculate_angle(p1, p2):
+    delta_y = p2[0] - p1[0]
+    delta_x = p2[1] - p1[1]
+    angle = np.arctan2(delta_y, delta_x) * (180 / np.pi)  # Convert radians to degrees
+    return angle
 
-# Plotting
-plt.figure(figsize=(10, 6))
-plt.scatter(data['longitude'], data['latitude'], color='blue', marker='o')
-plt.title('GPS Coordinates Plot')
-plt.xlabel('Longitude')
-plt.ylabel('Latitude')
-plt.grid()
-plt.axis('equal')  # Equal aspect ratio ensures the plot is not distorted
 
-# Show total points on the graph
-plt.text(0.05, 0.95, f'Total Points: {total_points}', transform=plt.gca().transAxes, 
-         fontsize=12, bbox=dict(boxstyle="round,pad=0.3", edgecolor='none', facecolor='lightgray'))
+def read_data():
+    data = pd.read_csv('/home/home/Desktop/Projects/pawpatrol/data/gpsdata.csv', header=None, names=['timestamp', 'latitude', 'longitude'])
+    # Convert ataFrame to list of tuples (latitude, longitude)
+    return list(zip(data['latitude'], data['longitude']))
 
-plt.show()
 
-# Print the total number of points in the console
-print(f'Total number of GPS points: {total_points}')
+def original() -> DataSamples:
+    samples = DataSamples()
+
+    data = read_data()
+    total_points = len(data)
+
+    samples.set(data)  # Store data as a list of tuples
+    return samples
 
 
 ###############################################################################
@@ -48,87 +61,52 @@ print(f'Total number of GPS points: {total_points}')
 #                                                                            #
 ###############################################################################
 
-# Function to calculate the angle between two points in degrees
-# Read the GPS data from the CSV file
-data = pd.read_csv('/home/home/Desktop/Projects/pawpatrol/data/gpsdata.csv', header=None, names=['timestamp', 'latitude', 'longitude'])
+def linear_path_optimization(data: DataSamples) -> DataSamples:
+    samples = DataSamples()
+    data = read_data()
+    samples.set(data)  
+    total_points = samples.len()  # Get length from the DataSamples class
 
-# Count the total number of points
-total_points = len(data)
+    filtered_latitudes = []
+    filtered_longitudes = []
 
-# Function to calculate the angle between two points in degrees
-def calculate_angle(p1, p2):
-    delta_y = p2[0] - p1[0]
-    delta_x = p2[1] - p1[1]
-    angle = np.arctan2(delta_y, delta_x) * (180 / np.pi)  # Convert radians to degrees
-    return angle
+    # First pass: Horizontal optimization
+    threshold_angle = 5  # You can adjust this threshold
 
-# Initialize lists to hold filtered points for the two passes
-filtered_latitudes = []
-filtered_longitudes = []
+    # Collect the first point
+    filtered_latitudes.append(samples.get()[0][0])
+    filtered_longitudes.append(samples.get()[0][1])
 
-# First pass: Horizontal optimization
-threshold_angle = 5  # You can adjust this threshold
+    for i in range(1, total_points):
+        prev_point = samples.get()[i - 1]
+        curr_point = samples.get()[i]
 
-# Collect the first point
-filtered_latitudes.append(data['latitude'].iloc[0])
-filtered_longitudes.append(data['longitude'].iloc[0])
+        angle = calculate_angle(prev_point, curr_point)
 
-# Iterate through the data points
-for i in range(1, total_points):
-    prev_point = (data['latitude'].iloc[i-1], data['longitude'].iloc[i-1])
-    curr_point = (data['latitude'].iloc[i], data['longitude'].iloc[i])
-    
-    # Calculate the angle between the previous and current point
-    angle = calculate_angle(prev_point, curr_point)
-    
-    # If the angle deviation exceeds the threshold (indicating a significant horizontal change), collect the current point
-    if abs(angle) > threshold_angle:
-        filtered_latitudes.append(curr_point[0])
-        filtered_longitudes.append(curr_point[1])
+        if abs(angle) > threshold_angle:
+            filtered_latitudes.append(curr_point[0])
+            filtered_longitudes.append(curr_point[1])
 
-# Second pass: Vertical optimization
-optimized_latitudes = []
-optimized_longitudes = []
+    # Second pass: Vertical optimization
+    threshold_distance = 1.0  # You can adjust this threshold
 
-# Initialize lists to hold the points for the vertical optimization
-if filtered_latitudes:
-    optimized_latitudes.append(filtered_latitudes[0])
-    optimized_longitudes.append(filtered_longitudes[0])
+    # Collect the first point
+    filtered_latitudes.append(samples.get()[0][0])
 
-# Threshold for vertical pass
-min_distance = 1.0  # Minimum distance in meters
+    for i in range(1, len(filtered_latitudes)):
+        prev_point = (filtered_latitudes[i - 1], filtered_longitudes[i - 1])
+        curr_point = (filtered_latitudes[i], filtered_longitudes[i])
 
-# Iterate through the filtered data points
-for i in range(1, len(filtered_latitudes)):
-    prev_point = (filtered_latitudes[i-1], filtered_longitudes[i-1])
-    curr_point = (filtered_latitudes[i], filtered_longitudes[i])
-    
-    # Calculate the distance between the previous and current point
-    distance = haversine(prev_point, curr_point)
-    
-    # If the distance exceeds the minimum distance, collect the current point
-    if distance > min_distance:
-        optimized_latitudes.append(curr_point[0])
-        optimized_longitudes.append(curr_point[1])
+        distance = haversine(prev_point, curr_point)
 
-# Plotting the optimized path
-plt.figure(figsize=(10, 6))
-plt.plot(optimized_longitudes, optimized_latitudes, color='red', linestyle='-', linewidth=2)  # Red line
-plt.scatter(optimized_longitudes, optimized_latitudes, color='blue', marker='o')  # Blue dots
-plt.title('Optimized GPS Coordinates Path')
-plt.xlabel('Longitude')
-plt.ylabel('Latitude')
-plt.grid()
-plt.axis('equal')  # Equal aspect ratio ensures the plot is not distorted
+        if distance > threshold_distance:
+            filtered_longitudes.append(curr_point[1])
 
-# Show total optimized points on the graph
-plt.text(0.05, 0.95, f'Total Optimized Points: {len(optimized_latitudes)}', transform=plt.gca().transAxes, 
-         fontsize=12, bbox=dict(boxstyle="round,pad=0.3", edgecolor='none', facecolor='lightgray'))
+    # Combine latitudes and longitudes into a list of tuples
+    filtered_data = list(zip(filtered_latitudes, filtered_longitudes))
+    samples.set(filtered_data)  # Set the filtered data back to samples
 
-plt.show()
-
-# Print the total number of optimized points in the console
-print(f'Total number of optimized GPS points: {len(optimized_latitudes)}')
+    return samples
 
 
 ###############################################################################
@@ -136,174 +114,145 @@ print(f'Total number of optimized GPS points: {len(optimized_latitudes)}')
 # Threshold Bubble Optimization                                              #
 #                                                                            #
 ###############################################################################
-# Haversine formula to calculate distance between two GPS points
-def haversine(coord1, coord2):
-    R = 6371000  # Radius of Earth in meters
-    lat1, lon1 = np.radians(coord1)
-    lat2, lon2 = np.radians(coord2)
+def threshold_bubble_optimization(data: DataSamples) -> DataSamples:
+    samples = DataSamples()
+    data = read_data()
+    samples.set(data)  
+    total_points = samples.len()  # Get length from the DataSamples class
 
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = np.sin(dlat / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2)**2
-    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
-    distance = R * c  # Distance in meters
-    return distance
+    # Initialize lists to hold filtered points
+    filtered_latitudes = []
+    filtered_longitudes = []
 
-# Read the GPS data from the CSV file
-data = pd.read_csv('gpsdata.csv', header=None, names=['timestamp', 'latitude', 'longitude'])
+    # Thresholds
+    threshold_angle = 5  # Angle deviation threshold in degrees
+    min_distance = 1.0  # Minimum distance in meters
 
-# Count the total number of points
-total_points = len(data)
+    # Collect the first point
+    filtered_latitudes.append(samples.get()[0][0])
+    filtered_longitudes.append(samples.get()[0][1])
 
-# Initialize lists to hold filtered points
-filtered_latitudes = []
-filtered_longitudes = []
+    # Iterate through the data points
+    for i in range(1, total_points):
+        prev_point = samples.get()[i - 1]
+        curr_point = samples.get()[i]
 
-# Thresholds
-threshold_angle = 5  # Angle deviation threshold in degrees
-min_distance = 1.0  # Minimum distance in meters
+        # Calculate the angle between the previous and current point
+        angle = calculate_angle(prev_point, curr_point)
 
-# Collect the first point
-filtered_latitudes.append(data['latitude'].iloc[0])
-filtered_longitudes.append(data['longitude'].iloc[0])
+        # Calculate the distance between the previous and current point
+        distance = haversine(prev_point, curr_point)
 
-# Iterate through the data points
-for i in range(1, total_points):
-    prev_point = (data['latitude'].iloc[i-1], data['longitude'].iloc[i-1])
-    curr_point = (data['latitude'].iloc[i], data['longitude'].iloc[i])
-    
-    # Calculate the angle between the previous and current point
-    angle = calculate_angle(prev_point, curr_point)
-    
-    # Calculate the distance between the previous and current point
-    distance = haversine(prev_point, curr_point)
-    
-    # If the angle deviation exceeds the threshold or the distance exceeds the minimum distance, collect the current point
-    if abs(angle) > threshold_angle or distance > min_distance:
-        filtered_latitudes.append(curr_point[0])
-        filtered_longitudes.append(curr_point[1])
+        # If the angle deviation exceeds the threshold or the distance exceeds the minimum distance, collect the current point
+        if abs(angle) > threshold_angle or distance > min_distance:
+            filtered_latitudes.append(curr_point[0])
+            filtered_longitudes.append(curr_point[1])
 
-# Plotting
-plt.figure(figsize=(10, 6))
-plt.plot(filtered_longitudes, filtered_latitudes, color='red', linestyle='-', linewidth=2)  # Red line
-plt.scatter(filtered_longitudes, filtered_latitudes, color='blue', marker='o')  # Blue dots
-plt.title('Filtered GPS Coordinates Path')
-plt.xlabel('Longitude')
-plt.ylabel('Latitude')
-plt.grid()
-plt.axis('equal')  # Equal aspect ratio ensures the plot is not distorted
+    # Combine latitudes and longitudes into a list of tuples
+    filtered_data = list(zip(filtered_latitudes, filtered_longitudes))
+    samples.set(filtered_data)  # Set the filtered data back to samples
 
-# Show total filtered points on the graph
-plt.text(0.05, 0.95, f'Total Filtered Points: {len(filtered_latitudes)}', transform=plt.gca().transAxes, 
-         fontsize=12, bbox=dict(boxstyle="round,pad=0.3", edgecolor='none', facecolor='lightgray'))
+    return samples
 
-plt.show()
-
-# Print the total number of filtered points in the console
-print(f'Total number of filtered GPS points: {len(filtered_latitudes)}')
 
 ###############################################################################
 # OPT 1 and then OPT 2 #
 ###############################################################################
+def opt1_opt2(data: DataSamples) -> DataSamples:
+    samples = DataSamples()
+    data = read_data()
+    samples.set(data)  
+    total_points = samples.len()  # Get length from the DataSamples class
 
-# Read the GPS data from the CSV file
-data = pd.read_csv('/home/home/Desktop/Projects/pawpatrol/data/gpsdata.csv', header=None, names=['timestamp', 'latitude', 'longitude'])
+    # Apply linear path optimization
+    samples = DataSamples()
+    data = read_data()
+    samples.set(data)  
 
-# Count the total number of points
-total_points = len(data)
+    opt1 = linear_path_optimization(samples)
+    opt1_points = opt1.len()  # Get length from optimized data
 
-# Function to calculate the angle between two points in degrees
-def calculate_angle(p1, p2):
-    delta_y = p2[0] - p1[0]
-    delta_x = p2[1] - p1[1]
-    angle = np.arctan2(delta_y, delta_x) * (180 / np.pi)  # Convert radians to degrees
-    return angle
+    # Apply threshold bubble optimization
+    samples = DataSamples()
+    data = read_data()
+    samples.set(data)  
 
-# Linear Path Optimization
-# Initialize lists to hold filtered points
-filtered_latitudes = []
-filtered_longitudes = []
+    opt2 = threshold_bubble_optimization(samples)
+    opt2_points = opt2.len()  # Get length from optimized data
 
-# Threshold angle in degrees for linear optimization
-threshold_angle = 5  # You can adjust this threshold
-
-# Collect the first point
-filtered_latitudes.append(data['latitude'].iloc[0])
-filtered_longitudes.append(data['longitude'].iloc[0])
-
-# Iterate through the data points
-for i in range(1, total_points):
-    prev_point = (data['latitude'].iloc[i-1], data['longitude'].iloc[i-1])
-    curr_point = (data['latitude'].iloc[i], data['longitude'].iloc[i])
+    # Combine both optimizations
+    samples = DataSamples()
+    data = read_data()
+    samples.set(data)
     
-    # Calculate the angle between the previous and current point
-    angle = calculate_angle(prev_point, curr_point)
-    
-    # If the angle deviation exceeds the threshold, collect the current point
-    if abs(angle) > threshold_angle:
-        filtered_latitudes.append(curr_point[0])
-        filtered_longitudes.append(curr_point[1])
+    only_opt1 = opt1.get()
+    opt1_stacked_opt2 = DataSamples()
+    opt1_stacked_opt2.set(only_opt1)
+    opt1_stacked_opt2 = threshold_bubble_optimization(opt1_stacked_opt2)
 
-# Now apply the second optimization on the filtered points
-optimized_latitudes = []
-optimized_longitudes = []
+    both = DataSamples()
+    both.set(opt1_stacked_opt2.get())
+    both_points = both.len()  # Get length from optimized data
 
-# Haversine formula to calculate distance between two GPS points
-def haversine(coord1, coord2):
-    R = 6371000  # Radius of Earth in meters
-    lat1, lon1 = np.radians(coord1)
-    lat2, lon2 = np.radians(coord2)
+    # print out statistics
+    print(f'Original Total Points: {total_points}, percentage of points kept: {((total_points-total_points)/total_points) * 100}%')
+    print(f'Linear Path Optimization Total Points: {opt1_points}, percent reduction : {((total_points-opt1_points)/total_points) * 100}%')
+    print(f'Threshold Bubble Optimization Total Points: {opt2_points}, percent reduction : {((total_points-opt2_points)/total_points) * 100}%')
+    print(f'Both Optimizations Total Points: {both_points}', f'percent reduction : {((total_points-both_points)/total_points) * 100}%')
 
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = np.sin(dlat / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2)**2
-    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
-    distance = R * c  # Distance in meters
-    return distance
 
-# Initialize lists to hold the points for the second optimization
-if filtered_latitudes:
-    optimized_latitudes.append(filtered_latitudes[0])
-    optimized_longitudes.append(filtered_longitudes[0])
+    return both
 
-# Thresholds for the second optimization
-threshold_angle_2 = 5  # Angle deviation threshold in degrees
-min_distance = 1.0  # Minimum distance in meters
-
-# Iterate through the filtered data points
-for i in range(1, len(filtered_latitudes)):
-    prev_point = (filtered_latitudes[i-1], filtered_longitudes[i-1])
-    curr_point = (filtered_latitudes[i], filtered_longitudes[i])
-    
-    # Calculate the angle between the previous and current point
-    angle = calculate_angle(prev_point, curr_point)
-    
-    # Calculate the distance between the previous and current point
-    distance = haversine(prev_point, curr_point)
-    
-    # If the angle deviation exceeds the threshold or the distance exceeds the minimum distance, collect the current point
-    if abs(angle) > threshold_angle_2 or distance > min_distance:
-        optimized_latitudes.append(curr_point[0])
-        optimized_longitudes.append(curr_point[1])
-
-# Plotting the optimized path
-plt.figure(figsize=(10, 6))
-plt.plot(optimized_longitudes, optimized_latitudes, color='red', linestyle='-', linewidth=2)  # Red line
-plt.scatter(optimized_longitudes, optimized_latitudes, color='blue', marker='o')  # Blue dots
-plt.title('Optimized GPS Coordinates Path')
-plt.xlabel('Longitude')
-plt.ylabel('Latitude')
-plt.grid()
-plt.axis('equal')  # Equal aspect ratio ensures the plot is not distorted
-
-# Show total optimized points on the graph
-plt.text(0.05, 0.95, f'Total Optimized Points: {len(optimized_latitudes)}', transform=plt.gca().transAxes, 
-         fontsize=12, bbox=dict(boxstyle="round,pad=0.3", edgecolor='none', facecolor='lightgray'))
-
-plt.show()
-
-# Print the total number of optimized points in the console
-print(f'Total number of optimized GPS points: {len(optimized_latitudes)}')
 
 ###############################################################################
+#                                                                            #
+# Plotting                                                                   #
+#                                                                            #
 ###############################################################################
+
+def plot(data: DataSamples, title: str):
+    latitudes, longitudes = zip(*data.get())  # Unzip into latitudes and longitudes
+    plt.figure(figsize=(10, 6))
+    plt.plot(longitudes, latitudes, color='red', marker='o', linestyle='-', markersize=2)
+    plt.title(title)
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+    plt.grid()
+    plt.show()
+
+
+def plot_all(data: DataSamples, opt1: DataSamples, opt2: DataSamples, both: DataSamples):
+    original_latitudes, original_longitudes = zip(*data.get())
+    opt1_latitudes, opt1_longitudes = zip(*opt1.get())
+    opt2_latitudes, opt2_longitudes = zip(*opt2.get())
+    both_latitudes, both_longitudes = zip(*both.get())
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(original_longitudes, original_latitudes, color='grey', marker='o', linestyle='-', markersize=2, label='Original')
+    plt.plot(opt1_longitudes, opt1_latitudes, color='blue', marker='o', linestyle='-', markersize=2, label='Linear Path Optimization')
+    plt.plot(opt2_longitudes, opt2_latitudes, color='green', marker='o', linestyle='-', markersize=2, label='Threshold Bubble Optimization')
+    plt.plot(both_longitudes, both_latitudes, color='red', marker='o', linestyle='-', markersize=2, label='Both Optimizations')
+    plt.title('GPS Data Optimization')
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+
+def main():
+    data = original()
+    opt1 = linear_path_optimization(data)
+    opt2 = threshold_bubble_optimization(data)
+    both = opt1_opt2(data)
+
+    plot(data, 'Original GPS Data')
+    plot(opt1, 'Optimized GPS Data (Linear Path Optimization)')
+    plot(opt2, 'Optimized GPS Data (Threshold Bubble Optimization)')
+    plot(both, 'Optimized GPS Data (Both Optimizations)')
+
+    plot_all(data, opt1, opt2, both)
+
+
+if __name__ == "__main__":
+    main()
