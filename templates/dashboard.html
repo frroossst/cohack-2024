@@ -257,7 +257,6 @@
             </div>
             <style>
                  input[type="range"] {
-                    -webkit-appearance: none;
                     width: 100%;
                     height: 8px;
                     background: #ddd; /* Background color of the track */
@@ -313,6 +312,9 @@
                 button:hover {
                     background-color: #e60000;
                 }
+                #map {
+                    transition: opacity 2s ease-in-out; /* 2-second fade-in */
+                }
             </style>
             <input type="range" id="timeline" min="0" value="0" step="1" style="width: 100%;">
             <div id="timestamp-display"></div>
@@ -332,7 +334,7 @@
             <script>
                 // Initialize the map
                 var map = L.map('map').setView([52.119598, -106.65289], 13); // Zoom level 13
-            
+
                 // Add a tile layer (OpenStreetMap)
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
@@ -355,7 +357,12 @@
                             // Call function to plot points and path with the expected format
                             plotPointsAndSetupTimeline(data);
                             document.getElementById("map").style.display = "block"; // Show the map
-                        }, 1000); // Delay to simulate loading time
+
+                            setTimeout(() => {
+                                mapElement.style.opacity = "1"; // Trigger the fade-in effect
+                            }, 50); // Small delay to ensure the display change takes effect before fading
+
+                        }, 2000); // Delay to simulate loading time
                     })
                     .catch(error => console.error('Error fetching data:', error));
 

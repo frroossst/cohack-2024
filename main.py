@@ -1,11 +1,20 @@
-from flask import Flask, render_template, request, jsonify, Response, redirect, url_for
-from typing import Union
+from flask import Flask, render_template, jsonify, redirect, url_for
 import pandas as pd
 
-from data import concatenate
+from data import concatenate, opti
 
 app = Flask(__name__)
 
+
+def log(message: str) -> None:
+    filepath = '/home/home/Desktop/Projects/pawpatrol/log.txt'
+    with open(filepath, 'a') as log_file:
+        log_file.write('[DEBUG] '+ message + '\n')
+
+def clear_log() -> None:
+    filepath = '/home/home/Desktop/Projects/pawpatrol/log.txt'
+    with open(filepath, 'w') as log_file:
+        log_file.write('')
 
 @app.route('/dashboard')
 def dashboard():
@@ -23,15 +32,20 @@ def hello():
 @app.route('/data', methods=['GET'])
 def get_gps_data():
     try:
-        # Read the CSV file into a pandas DataFrame
-        df = pd.read_csv('/home/home/Desktop/Projects/pawpatrol/data/cutesiedata.csv', header=None, names=['timestamp', 'latitude', 'longitude'])
+        df = pd.read_csv('/home/home/Desktop/Projects/pawpatrol/data/cutesiedata.csv', header=None, names=['Time', 'Latitude', 'Longitude'])
 
-        # Convert the DataFrame to a list of dictionaries
-        points = df.to_dict(orient='records')
-        
+        # Get the length of the data
+        len_data = len(df)
+
+        # Colton's optimisation
+        result_df = opti.compress_csv(df)
+
+        assert len(result_df) <= len_data, f"Expected compressed data to be smaller than original data, but got {len(result_df)} > {len_data}"
+
         # Return the points as a JSON response
-        return jsonify(points)
+        return jsonify(result_df)
     except Exception as e:
+        log(str(e))
         return jsonify({"error": str(e)}), 500 
 
 @app.route('/activity', methods=['GET'])
@@ -41,7 +55,7 @@ def get_activity_data():
         df = pd.read_csv('/home/home/Desktop/Projects/pawpatrol/data/activity_points.csv', header=None, names=['timestamp', 'latitude', 'longitude'])
 
         result_df = concatenate.conc(df, threshold=0.0009)
-        
+
         # Convert the DataFrame to a list of dictionaries
         points = result_df.to_dict(orient='records')
 
