@@ -38,29 +38,63 @@
         }
     </script>
 
-    <div class="pawprint" style="background-image: url('static/pawprint.jpeg');"></div>
-    <div class="pawprint" style="background-image: url('static/pawprint.jpeg');"></div>
-    <div class="pawprint" style="background-image: url('static/pawprint.jpeg');"></div>
-
     <script>
-        // Function to animate paw prints
-        function animatePawPrints() {
-            const pawprints = document.querySelectorAll('.pawprint');
-            pawprints.forEach(paw => {
-                const x = Math.random() * window.innerWidth;
-                const y = Math.random() * window.innerHeight;
-                paw.style.transform = `translate(${x}px, ${y}px)`;
-                paw.style.opacity = '1';
+    const pawPrintImages = [
+        'static/pawprint.jpeg',
+        'static/pawprint.jpeg',
+        'static/pawprint.jpeg',
+    ];
 
-                // Use a timeout to delay fading out
-                setTimeout(() => {
-                    paw.style.opacity = '0';
-                }, 2000); // Change the duration to control how long it stays visible
-            });
+    const MAX_PAWS = 6;
+    const pawPrints = []; // Array to keep track of existing paw prints
+    let lastPositionLeft = true; // Track last position (true for left, false for right)
+
+    function createRandomPawPrint() {
+        const pawPrint = document.createElement('img');
+        const randomImage = pawPrintImages[Math.floor(Math.random() * pawPrintImages.length)];
+        pawPrint.src = randomImage;
+        pawPrint.className = 'pawprint';
+
+        if (pawPrints.length >= MAX_PAWS) {
+            // If the maximum number of paw prints is reached, remove the oldest one
+            const oldestPawPrint = pawPrints.shift();
+            oldestPawPrint.classList.add('fade-out'); // Start fading out the oldest paw print
+            setTimeout(() => {
+                oldestPawPrint.remove(); // Remove after fading out
+            }, 900); // Wait for the fade-out transition to complete
         }
 
-        // Call the animate function repeatedly
-        setInterval(animatePawPrints, 3000); // Every 3 seconds
+        // Determine position
+        const isLeft = lastPositionLeft; // Alternate position
+        if (isLeft) {
+            // Randomize x position in the left half
+            pawPrint.style.left = Math.random() * 50 + 'vw'; // 0% to 50% for left half
+        } else {
+            // Randomize x position in the right half
+            pawPrint.style.left = 50 + Math.random() * 50 + 'vw'; // 50% to 100% for right half
+        }
+
+        // Randomize y position
+        pawPrint.style.top = Math.random() * 100 + 'vh'; // Random y position
+
+        document.body.appendChild(pawPrint);
+        pawPrints.push(pawPrint); // Add the new paw print to the array
+
+        // Start fade-out effect before removing the paw print
+        setTimeout(() => {
+            pawPrint.classList.add('fade-out'); // Add fade-out class
+            setTimeout(() => {
+                pawPrint.remove(); // Remove after fading out
+                pawPrints.splice(pawPrints.indexOf(pawPrint), 1); // Remove from tracking array
+            }, 1000); // Wait for the fade-out transition to complete
+        }, 5000); // Change time to keep paw print on screen
+
+        // Update the last position
+        lastPositionLeft = !lastPositionLeft; // Alternate between left and right
+    }
+
+    // Create a random paw print every second
+    setInterval(createRandomPawPrint, 1000);
     </script>
 
 

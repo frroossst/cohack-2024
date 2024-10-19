@@ -1,4 +1,3 @@
-/* static/styles.css */
 body {
     font-family: 'Poppins', sans-serif;
     background-color: #ffeef2; /* Light pink background */
@@ -14,14 +13,17 @@ body {
 
 .pawprint {
     position: absolute;
-    width: 60px;
-    height: 60px;
-    opacity: 0; /* Start invisible */
-    pointer-events: none;
-    transition: opacity 1s ease; /* Smooth fade */
+    width: 60px; /* Adjust size as needed */
+    height: 60px; /* Adjust size as needed */
+    opacity: 0.5; /* Make it semi-transparent */
+    pointer-events: none; /* Allow clicks to go through */
     z-index: -1;
+    transition: opacity 1s ease; /* Transition effect for opacity */
 }
 
+.fade-out {
+    opacity: 0; /* Fade out effect */
+}
 
 .container {
     background-color: #ffffff;
